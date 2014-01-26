@@ -828,7 +828,7 @@ public final class SendCoinsFragment extends SherlockFragment
 
 				directPay(sentTransaction);
 
-				application.broadcastTransaction(sentTransaction);
+				// application.broadcastTransaction(sentTransaction);
 
 				final Intent result = new Intent();
 				BitcoinIntegration.transactionHashToResult(result, sentTransaction.getHashAsString());
