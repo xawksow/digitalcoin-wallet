@@ -53,6 +53,7 @@ public class Configuration
 	private static final String PREFS_KEY_BEST_CHAIN_HEIGHT_EVER = "best_chain_height_ever";
 	private static final String PREFS_KEY_CACHED_EXCHANGE_CURRENCY = "cached_exchange_currency";
 	private static final String PREFS_KEY_CACHED_EXCHANGE_RATE = "cached_exchange_rate";
+	private static final String PREFS_KEY_LAST_EXCHANGE_DIRECTION = "last_exchange_direction";
 	public static final String PREFS_KEY_REMIND_BACKUP = "remind_backup";
 
 	private static final String PREFS_DEFAULT_BTC_PRECISION = "2/3";
@@ -218,6 +219,16 @@ public class Configuration
 		edit.putString(PREFS_KEY_CACHED_EXCHANGE_CURRENCY, cachedExchangeRate.currencyCode);
 		edit.putLong(PREFS_KEY_CACHED_EXCHANGE_RATE, cachedExchangeRate.rate.longValue());
 		edit.commit();
+	}
+
+	public boolean getLastExchangeDirection()
+	{
+		return prefs.getBoolean(PREFS_KEY_LAST_EXCHANGE_DIRECTION, true);
+	}
+
+	public void setLastExchangeDirection(final boolean exchangeDirection)
+	{
+		prefs.edit().putBoolean(PREFS_KEY_LAST_EXCHANGE_DIRECTION, exchangeDirection).commit();
 	}
 
 	public void registerOnSharedPreferenceChangeListener(final OnSharedPreferenceChangeListener listener)
