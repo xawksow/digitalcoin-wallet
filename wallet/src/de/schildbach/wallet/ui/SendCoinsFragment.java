@@ -131,7 +131,6 @@ public final class SendCoinsFragment extends SherlockFragment
 	private MenuItem scanAction;
 
 	private AddressAndLabel validatedAddress = null;
-	private boolean isValidAmounts = false;
 
 	@CheckForNull
 	private String bluetoothMac;
@@ -250,15 +249,13 @@ public final class SendCoinsFragment extends SherlockFragment
 		@Override
 		public void changed()
 		{
-			dismissPopup();
-
-			validateAmounts(false);
+			updateView();
 		}
 
 		@Override
 		public void done()
 		{
-			validateAmounts(true);
+			updateView();
 
 			viewGo.requestFocusFromTouch();
 		}
@@ -266,10 +263,6 @@ public final class SendCoinsFragment extends SherlockFragment
 		@Override
 		public void focusChanged(final boolean hasFocus)
 		{
-			if (!hasFocus)
-			{
-				validateAmounts(true);
-			}
 		}
 	};
 
@@ -443,7 +436,7 @@ public final class SendCoinsFragment extends SherlockFragment
 			public void onClick(final View v)
 			{
 				validateReceivingAddress(true);
-				validateAmounts(true);
+				isAmountValid();
 
 				if (everythingValid())
 					handleGo();
@@ -484,48 +477,6 @@ public final class SendCoinsFragment extends SherlockFragment
 		}
 
 		return view;
-	}
-
-	private void initStateFromIntentExtras(@Nonnull final Bundle extras)
-	{
-		final PaymentIntent paymentIntent = extras.getParcelable(SendCoinsActivity.INTENT_EXTRA_PAYMENT_INTENT);
-
-		update(paymentIntent);
-	}
-
-	private void initStateFromBitcoinUri(@Nonnull final Uri bitcoinUri)
-	{
-		final String input = bitcoinUri.toString();
-
-		new StringInputParser(input)
-		{
-			@Override
-			protected void handlePaymentIntent(final PaymentIntent paymentIntent)
-			{
-				update(paymentIntent);
-			}
-
-			@Override
-			protected void handleDirectTransaction(final Transaction transaction)
-			{
-				cannotClassify(input);
-			}
-
-			@Override
-			protected void error(final int messageResId, final Object... messageArgs)
-			{
-				dialog(activity, dismissListener, 0, messageResId, messageArgs);
-			}
-
-			private final DialogInterface.OnClickListener dismissListener = new DialogInterface.OnClickListener()
-			{
-				@Override
-				public void onClick(final DialogInterface dialog, final int which)
-				{
-					activity.finish();
-				}
-			};
-		}.parse();
 	}
 
 	@Override
@@ -588,8 +539,6 @@ public final class SendCoinsFragment extends SherlockFragment
 		if (validatedAddress != null)
 			outState.putParcelable("validated_address", validatedAddress);
 
-		outState.putBoolean("is_valid_amounts", isValidAmounts);
-
 		if (sentTransaction != null)
 			outState.putSerializable("sent_transaction_hash", sentTransaction.getHash());
 
@@ -604,8 +553,6 @@ public final class SendCoinsFragment extends SherlockFragment
 		state = (State) savedInstanceState.getSerializable("state");
 
 		validatedAddress = savedInstanceState.getParcelable("validated_address");
-
-		isValidAmounts = savedInstanceState.getBoolean("is_valid_amounts");
 
 		if (savedInstanceState.containsKey("sent_transaction_hash"))
 		{
@@ -730,24 +677,11 @@ public final class SendCoinsFragment extends SherlockFragment
 		updateView();
 	}
 
-	private void validateAmounts(final boolean popups)
+	private boolean isAmountValid()
 	{
-		isValidAmounts = false;
-
 		final BigInteger amount = amountCalculatorLink.getAmount();
 
-		if (amount != null && amount.signum() > 0)
-		{
-			isValidAmounts = true;
-		}
-		else
-		{
-			// empty amount
-			if (popups)
-				popupMessage(amountCalculatorLink.activeView(), getString(R.string.send_coins_fragment_amount_empty));
-		}
-
-		updateView();
+		return amount != null && amount.signum() > 0;
 	}
 
 	private void popupMessage(@Nonnull final View anchor, @Nonnull final String message)
@@ -1024,10 +958,52 @@ public final class SendCoinsFragment extends SherlockFragment
 
 	private boolean everythingValid()
 	{
-		return state == State.INPUT && validatedAddress != null && isValidAmounts;
+		return state == State.INPUT && validatedAddress != null && isAmountValid();
 	}
 
-	private void update(final @Nonnull PaymentIntent paymentIntent)
+	private void initStateFromIntentExtras(@Nonnull final Bundle extras)
+	{
+		final PaymentIntent paymentIntent = extras.getParcelable(SendCoinsActivity.INTENT_EXTRA_PAYMENT_INTENT);
+
+		updateStateFrom(paymentIntent);
+	}
+
+	private void initStateFromBitcoinUri(@Nonnull final Uri bitcoinUri)
+	{
+		final String input = bitcoinUri.toString();
+
+		new StringInputParser(input)
+		{
+			@Override
+			protected void handlePaymentIntent(final PaymentIntent paymentIntent)
+			{
+				updateStateFrom(paymentIntent);
+			}
+
+			@Override
+			protected void handleDirectTransaction(final Transaction transaction)
+			{
+				cannotClassify(input);
+			}
+
+			@Override
+			protected void error(final int messageResId, final Object... messageArgs)
+			{
+				dialog(activity, dismissListener, 0, messageResId, messageArgs);
+			}
+
+			private final DialogInterface.OnClickListener dismissListener = new DialogInterface.OnClickListener()
+			{
+				@Override
+				public void onClick(final DialogInterface dialog, final int which)
+				{
+					activity.finish();
+				}
+			};
+		}.parse();
+	}
+
+	private void updateStateFrom(final @Nonnull PaymentIntent paymentIntent)
 	{
 		log.info("got {}", paymentIntent);
 
@@ -1054,8 +1030,6 @@ public final class SendCoinsFragment extends SherlockFragment
 		else
 			viewGo.requestFocus();
 
-		this.bluetoothMac = paymentIntent.bluetoothMac;
-
 		bluetoothAck = null;
 
 		updateView();
@@ -1066,7 +1040,6 @@ public final class SendCoinsFragment extends SherlockFragment
 			public void run()
 			{
 				validateReceivingAddress(true);
-				validateAmounts(true);
 			}
 		}, 500);
 	}
