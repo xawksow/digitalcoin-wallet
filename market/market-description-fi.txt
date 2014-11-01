@@ -1,0 +1,36 @@
+<b>Pidä digitalcoinisi aina mukana taskussasi!</b> Voit maksaa nopeasti skannaamalla QR-koodin. Kauppiaana saat maksut turvallisesti ja välittömästi. digitalcoin Wallet on ensimmäinen digitalcoin-mobiilisovellus, ja kenties myös kaikista turvallisin!
+
+
+<b>OMINAISUUDET</b>
+
+• Ei vaadi rekisteröintiä, verkkopalveluja tai pilvitallennusta! Tämä lompakko on hajautettu ja suorayhteyksinen.
+• Mahdollisuus näyttää digitalcoin-varat määrissä DGC, mDGC ja µDGC.
+• Yksikkömuunnos valtioiden valuuttojen välillä.
+• digitalcoinien lähettäminen ja vastaanottaminen NFC, QR-koodien tai digitalcoin-URL-osotteiden avulla.
+• Osoitekirja säännöllisesti käytettyjä digitalcoin-osoitteita varten.
+• Kun et ole verkkoyhteyden ulottuvilla, voit silti maksaa Bluetoothin välityksellä.
+• Järjestelmän ilmoitus vastaanotetuille digitalcoineille.
+• Paperisen lompakon pyyhkäisymahdollisuus (esim. näitä käytetään "kylmissä varastoissa").
+• Android-sovellus digitalcoin-varojen hallintaan.
+
+
+<b>OSALLISTU</b>
+
+digitalcoin Wallet on <b>avointa lähdekoodia</b> ja <b>vapaa ohjelmisto</b>. Lisenssi: GPLv3
+https://www.gnu.org/licenses/gpl-3.0.en.html
+
+Lähdekoodi saatavilla GitHub:sta:
+https://github.com/HashEngineering/digitalcoin-wallet
+
+Kaikki käännökset Transifex:n kautta:
+https://www.transifex.com/projects/p/bitcoin-wallet/
+
+
+<b>SUOSITTELUT</b>
+
+• Useat mobiililompakot perustuvat digitalcoin Wallet-ohjelman lähdekoodiin, esimerkiksi: blockchain.info, Hive and KnC.
+• http://digitalcoin.co: suosittelema mobiililompakko
+• BitPay:n suosittelema
+
+
+<i>Käytä omalla vastuulla!</i>

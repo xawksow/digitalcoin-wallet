@@ -1,20 +1,32 @@
-Dit is een standalone digitalcoin Wallet voor uw Android apparaat. U kan direct digitalcoins versturen tussen telefoons door simpelweg de QR-code te scannen die de app weergeeft of via NFC (Near Field Communication).
+<b>Draag je digitalcoins altijd bij je, in je broekzak!</b> Je kunt vlot betalen door een QR-code te scannen. Als handelaar ontvang je je betalingen betrouwbaar en onmiddelijk. digitalcoin Wallet is de eerste mobiele digitalcoin-app, en misschien wel de veiligste!
 
-FUNCTIES:
+<b>FEATURES</b>
 
-• Weergeven van het wallet saldo in digitalcoin en verschillende andere valuta.
-• Verzenden en ontvangen van digitalcoin via NFC, QR-codes of digitalcoin URLs.
-• Adresboek voor veelgebruikte digitalcoin adressen.
-• Transacties ingeven tijdens het offline zijn, deze zullen worden uitgevoerd wanneer u online komt.
-• Systeem melding over digitalcoin connectiviteit en ontvangen digitalcoins.
-• Widget voor digitalcoin saldo.
+• Geen registratie, webservice of cloud vereist! De portemonnee is decentraal en peer-to-peer.
+• Geef het digitalcoin-bedrag weer in DGC, mDGC en µDGC.
+• Conversie van en naar nationale valuta.
+* Verzend en ontvang digitalcoin via NFC, QR-codes of digitalcoin-URL's
+• Adresboek voor regelmatig gebruikte digitalcoin-adressen.
+• Ook offline toch betalen via Bluetooth
+• Systeemmelding wanneer je digitalcoins ontvangt
+• App widget voor digitalcoin saldo.
 
-Voor meer informatie over digitalcoin kunt u terecht op
-http://digitalcoin.co
 
-Als u een bijdrage wil leveren aan digitalcoin Wallet, het project is te vinden op
+<b>HELP MEE</b>
+
+digitalcoin Wallet is <b>open source</b> en <b>free software</b>. Licentie: GPLv3
+https://www.gnu.org/licenses/gpl-3.0.en.html
+
+Onze broncode is beschikbaar op GitHub:
 https://github.com/HashEngineering/digitalcoin-wallet
 
-Licentie: GPLv3
-Gebruik op eigen risico!
-http://www.gnu.org/licenses/gpl-3.0.en.html
+Alle vertalingen worden geregeld via Transifex:
+https://www.transifex.com/projects/p/bitcoin-wallet/
+
+
+<b>TESTIMONIALS</b>
+
+* Aanbevolen mobiele portemonnee op http://digitalcoin.co
+
+
+<i>Gebruik op eigen risico!</i>
