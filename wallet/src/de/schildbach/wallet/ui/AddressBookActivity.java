@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,132 +18,194 @@
 package de.schildbach.wallet.ui;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
-import android.support.v4.view.ViewPager;
+import org.bitcoinj.core.Address;
+import org.bitcoinj.core.ECKey;
+import org.bitcoinj.crypto.DeterministicKey;
+import org.bitcoinj.wallet.Wallet;
 
-import com.actionbarsherlock.app.ActionBar;
-import com.actionbarsherlock.view.MenuItem;
-import com.google.bitcoin.core.Address;
-import com.google.bitcoin.core.ECKey;
+import com.google.common.collect.Iterables;
 
 import de.schildbach.wallet.Constants;
 import de.schildbach.wallet.util.ViewPagerTabs;
 import de.schildbach.wallet_test.R;
 
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+
 /**
  * @author Andreas Schildbach
  */
-public final class AddressBookActivity extends AbstractWalletActivity
-{
-	public static void start(final Context context, final boolean sending)
-	{
-		final Intent intent = new Intent(context, AddressBookActivity.class);
-		intent.putExtra(EXTRA_SENDING, sending);
-		context.startActivity(intent);
-	}
+public final class AddressBookActivity extends AbstractWalletActivity {
+    public static void start(final Context context) {
+        context.startActivity(new Intent(context, AddressBookActivity.class));
+    }
 
-	private static final String EXTRA_SENDING = "sending";
+    private WalletAddressesFragment walletAddressesFragment;
+    private SendingAddressesFragment sendingAddressesFragment;
 
-	private WalletAddressesFragment walletAddressesFragment;
-	private SendingAddressesFragment sendingAddressesFragment;
+    private static final String TAG_LEFT = "wallet_addresses";
+    private static final String TAG_RIGHT = "sending_addresses";
 
-	@Override
-	protected void onCreate(final Bundle savedInstanceState)
-	{
-		super.onCreate(savedInstanceState);
+    @Override
+    protected void onCreate(final Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-		setContentView(R.layout.address_book_content);
+        setContentView(R.layout.address_book_content);
 
-		final ActionBar actionBar = getSupportActionBar();
-		actionBar.setDisplayHomeAsUpEnabled(true);
+        final FragmentManager fragmentManager = getFragmentManager();
 
-		final ViewPager pager = (ViewPager) findViewById(R.id.address_book_pager);
+        walletAddressesFragment = (WalletAddressesFragment) fragmentManager.findFragmentByTag(TAG_LEFT);
+        sendingAddressesFragment = (SendingAddressesFragment) fragmentManager.findFragmentByTag(TAG_RIGHT);
 
-		final FragmentManager fm = getSupportFragmentManager();
+        final FragmentTransaction removal = fragmentManager.beginTransaction();
 
-		if (pager != null)
-		{
-			final ViewPagerTabs pagerTabs = (ViewPagerTabs) findViewById(R.id.address_book_pager_tabs);
-			pagerTabs.addTabLabels(R.string.address_book_list_receiving_title, R.string.address_book_list_sending_title);
+        if (walletAddressesFragment == null)
+            walletAddressesFragment = new WalletAddressesFragment();
+        else
+            removal.remove(walletAddressesFragment);
 
-			final PagerAdapter pagerAdapter = new PagerAdapter(fm);
+        if (sendingAddressesFragment == null)
+            sendingAddressesFragment = new SendingAddressesFragment();
+        else
+            removal.remove(sendingAddressesFragment);
 
-			pager.setAdapter(pagerAdapter);
-			pager.setOnPageChangeListener(pagerTabs);
-			final int position = getIntent().getBooleanExtra(EXTRA_SENDING, true) == true ? 1 : 0;
-			pager.setCurrentItem(position);
-			pager.setPageMargin(2);
-			pager.setPageMarginDrawable(R.color.bg_less_bright);
+        if (!removal.isEmpty()) {
+            removal.commit();
+            fragmentManager.executePendingTransactions();
+        }
 
-			pagerTabs.onPageSelected(position);
-			pagerTabs.onPageScrolled(position, 0, 0);
+        final ViewPager pager = (ViewPager) findViewById(R.id.address_book_pager);
+        if (pager != null) {
+            pager.setAdapter(
+                    new TwoFragmentAdapter(fragmentManager, walletAddressesFragment, sendingAddressesFragment));
 
-			walletAddressesFragment = new WalletAddressesFragment();
-			sendingAddressesFragment = new SendingAddressesFragment();
-		}
-		else
-		{
-			walletAddressesFragment = (WalletAddressesFragment) fm.findFragmentById(R.id.wallet_addresses_fragment);
-			sendingAddressesFragment = (SendingAddressesFragment) fm.findFragmentById(R.id.sending_addresses_fragment);
-		}
+            final ViewPagerTabs pagerTabs = (ViewPagerTabs) findViewById(R.id.address_book_pager_tabs);
+            pagerTabs.addTabLabels(R.string.address_book_list_receiving_title,
+                    R.string.address_book_list_sending_title);
 
-		updateFragments();
-	}
+            pager.setOnPageChangeListener(pagerTabs);
+            final int position = 1;
+            pager.setCurrentItem(position);
+            pager.setPageMargin(2);
+            pager.setPageMarginDrawable(R.color.bg_less_bright);
 
-	@Override
-	public boolean onOptionsItemSelected(final MenuItem item)
-	{
-		switch (item.getItemId())
-		{
-			case android.R.id.home:
-				finish();
-				return true;
-		}
+            pagerTabs.onPageSelected(position);
+            pagerTabs.onPageScrolled(position, 0, 0);
+        } else {
+            fragmentManager.beginTransaction().add(R.id.wallet_addresses_fragment, walletAddressesFragment, TAG_LEFT)
+                    .add(R.id.sending_addresses_fragment, sendingAddressesFragment, TAG_RIGHT).commit();
+        }
 
-		return super.onOptionsItemSelected(item);
-	}
+        updateFragments();
+    }
 
-	/* private */void updateFragments()
-	{
-		final List<ECKey> keys = getWalletApplication().getWallet().getKeys();
-		final ArrayList<Address> addresses = new ArrayList<Address>(keys.size());
+    @Override
+    public boolean onOptionsItemSelected(final MenuItem item) {
+        switch (item.getItemId()) {
+        case android.R.id.home:
+            finish();
+            return true;
+        }
 
-		for (final ECKey key : keys)
-		{
-			final Address address = key.toAddress(Constants.NETWORK_PARAMETERS);
-			addresses.add(address);
-		}
+        return super.onOptionsItemSelected(item);
+    }
 
-		sendingAddressesFragment.setWalletAddresses(addresses);
-	}
+    /* private */void updateFragments() {
+        final Wallet wallet = getWalletApplication().getWallet();
+        final List<ECKey> derivedKeys = wallet.getIssuedReceiveKeys();
+        Collections.sort(derivedKeys, DeterministicKey.CHILDNUM_ORDER);
+        final List<ECKey> randomKeys = wallet.getImportedKeys();
+        final ArrayList<Address> addresses = new ArrayList<Address>(derivedKeys.size() + randomKeys.size());
 
-	private class PagerAdapter extends FragmentStatePagerAdapter
-	{
-		public PagerAdapter(final FragmentManager fm)
-		{
-			super(fm);
-		}
+        for (final ECKey key : Iterables.concat(derivedKeys, randomKeys)) {
+            final Address address = key.toAddress(Constants.NETWORK_PARAMETERS);
+            addresses.add(address);
+        }
 
-		@Override
-		public int getCount()
-		{
-			return 2;
-		}
+        sendingAddressesFragment.setWalletAddresses(addresses);
+    }
 
-		@Override
-		public Fragment getItem(final int position)
-		{
-			if (position == 0)
-				return walletAddressesFragment;
-			else
-				return sendingAddressesFragment;
-		}
-	}
+    private static class TwoFragmentAdapter extends PagerAdapter {
+        private final FragmentManager fragmentManager;
+        private final Fragment left;
+        private final Fragment right;
+
+        private FragmentTransaction currentTransaction = null;
+        private Fragment currentPrimaryItem = null;
+
+        public TwoFragmentAdapter(final FragmentManager fragmentManager, final Fragment left, final Fragment right) {
+            this.fragmentManager = fragmentManager;
+            this.left = left;
+            this.right = right;
+        }
+
+        @Override
+        public int getCount() {
+            return 2;
+        }
+
+        @Override
+        public Object instantiateItem(final ViewGroup container, final int position) {
+            if (currentTransaction == null)
+                currentTransaction = fragmentManager.beginTransaction();
+
+            final String tag = (position == 0) ? TAG_LEFT : TAG_RIGHT;
+            final Fragment fragment = (position == 0) ? left : right;
+            currentTransaction.add(container.getId(), fragment, tag);
+
+            if (fragment != currentPrimaryItem) {
+                fragment.setMenuVisibility(false);
+                fragment.setUserVisibleHint(false);
+            }
+
+            return fragment;
+        }
+
+        @Override
+        public void destroyItem(final ViewGroup container, final int position, final Object object) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setPrimaryItem(final ViewGroup container, final int position, final Object object) {
+            final Fragment fragment = (Fragment) object;
+            if (fragment != currentPrimaryItem) {
+                if (currentPrimaryItem != null) {
+                    currentPrimaryItem.setMenuVisibility(false);
+                    currentPrimaryItem.setUserVisibleHint(false);
+                }
+                if (fragment != null) {
+                    fragment.setMenuVisibility(true);
+                    fragment.setUserVisibleHint(true);
+                }
+                currentPrimaryItem = fragment;
+            }
+        }
+
+        @Override
+        public void finishUpdate(final ViewGroup container) {
+            if (currentTransaction != null) {
+                currentTransaction.commitAllowingStateLoss();
+                currentTransaction = null;
+                fragmentManager.executePendingTransactions();
+            }
+        }
+
+        @Override
+        public boolean isViewFromObject(final View view, final Object object) {
+            return ((Fragment) object).getView() == view;
+        }
+    }
 }

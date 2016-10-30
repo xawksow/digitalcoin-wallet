@@ -1,34 +1,28 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <resources>
 
-	<string name="help_wallet">
+    <string name="help_wallet">
 <![CDATA[
 		<p>
-			The upper left part of the screen displays your selected Bitcoin address that other people need to know in order to send you Bitcoins.
-			Tap to change the address.
+			The upper left part of the screen displays your balance in Bitcoins and one selected national currency.
+			Tap to go to the list of national currencies, and tap on one of the currencies to select it as default.
 		</p>
 		<p>
 			The QR code on the right contains your bitcoin address and can be used for scanning by another party.
 			Tap on the QR code to get a larger version of it.
 		</p>
 		<p>
-			In the middle of the screen, your balance is displayed.
-			The value of your wallet is also shown in one selected local currency.
-			Tap on balance to display list of all local currencies, and tap on one of the currencies to select it as default.
-		</p>
-		<p>
 			The bottom of the screen is covered by your transactions list, which is empty at the beginning.
 			Pending transactions are greyed out until they are confirmed.
 			Tap on one entry to add the senders or receivers address to the address book.
-			Swipe left or right to apply filters to the list.
 		</p>
 		<p>
 			You can send or request coins by tapping the buttons in the action bar.
 			More options are available in the options menu.
 		</p>
 	]]>
-	</string>
-	<string name="help_request_coins">
+    </string>
+    <string name="help_request_coins">
 <![CDATA[
 		<p>
 			Using this dialog, you can request coins from another person (who should already have installed Bitcoin Wallet).
@@ -46,8 +40,8 @@
 			If she accepts, all she needs to do is sending the payment.
 		</p>
 	]]>
-	</string>
-	<string name="help_send_coins">
+    </string>
+    <string name="help_send_coins">
 <![CDATA[
 		<p>
 			You have initiated the process of sending coins.
@@ -76,8 +70,8 @@
 			Always check the receiving address.
 		</p>
 	]]>
-	</string>
-	<string name="help_safety">
+    </string>
+    <string name="help_safety">
 <![CDATA[
 		<p>
 			<b>Important safety notes:</b>
@@ -110,6 +104,6 @@
 			<b>Only use with small amounts</b> for day use.
 		</p>
 	]]>
-	</string>
+    </string>
 
 </resources>

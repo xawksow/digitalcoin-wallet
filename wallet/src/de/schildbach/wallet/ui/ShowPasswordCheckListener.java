@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2014 the original author or authors.
+ * Copyright 2012-2015 the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,9 +17,8 @@
 
 package de.schildbach.wallet.ui;
 
-import javax.annotation.Nonnull;
-
-import android.text.InputType;
+import android.text.method.PasswordTransformationMethod;
+import android.text.method.TransformationMethod;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
@@ -27,19 +26,18 @@ import android.widget.EditText;
 /**
  * @author Andreas Schildbach
  */
-public final class ShowPasswordCheckListener implements OnCheckedChangeListener
-{
-	private EditText passwordView;
+public final class ShowPasswordCheckListener implements OnCheckedChangeListener {
+    private EditText[] passwordViews;
 
-	public ShowPasswordCheckListener(@Nonnull final EditText passwordView)
-	{
-		this.passwordView = passwordView;
-	}
+    public ShowPasswordCheckListener(final EditText... passwordViews) {
+        this.passwordViews = passwordViews;
+    }
 
-	@Override
-	public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked)
-	{
-		passwordView.setInputType(InputType.TYPE_CLASS_TEXT
-				| (isChecked ? InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD : InputType.TYPE_TEXT_VARIATION_PASSWORD));
-	}
+    @Override
+    public void onCheckedChanged(final CompoundButton buttonView, final boolean isChecked) {
+        final TransformationMethod transformationMethod = isChecked ? null : PasswordTransformationMethod.getInstance();
+
+        for (final EditText passwordView : passwordViews)
+            passwordView.setTransformationMethod(transformationMethod);
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2014-2015 the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,98 +17,103 @@
 
 package de.schildbach.wallet.ui;
 
+import javax.annotation.Nullable;
+
+import de.schildbach.wallet_test.R;
+
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface.OnClickListener;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
-import de.schildbach.wallet_test.R;
 
 /**
  * @author Andreas Schildbach
  */
-public class DialogBuilder extends AlertDialog.Builder
-{
-	private final View customTitle;
-	private final ImageView iconView;
-	private final TextView titleView;
+public class DialogBuilder extends AlertDialog.Builder {
+    private final View customTitle;
+    private final ImageView iconView;
+    private final TextView titleView;
 
-	public DialogBuilder(final Context context)
-	{
-		super(context);
+    public static DialogBuilder warn(final Context context, final int titleResId) {
+        final DialogBuilder builder = new DialogBuilder(context);
+        builder.setIcon(R.drawable.ic_warning_grey600_24dp);
+        builder.setTitle(titleResId);
+        return builder;
+    }
 
-		setInverseBackgroundForced(true);
+    public DialogBuilder(final Context context) {
+        super(context, Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP ? AlertDialog.THEME_HOLO_LIGHT
+                : AlertDialog.THEME_DEVICE_DEFAULT_LIGHT);
 
-		this.customTitle = LayoutInflater.from(context).inflate(R.layout.dialog_title, null);
-		this.iconView = (ImageView) customTitle.findViewById(android.R.id.icon);
-		this.titleView = (TextView) customTitle.findViewById(android.R.id.title);
-	}
+        this.customTitle = LayoutInflater.from(context).inflate(R.layout.dialog_title, null);
+        this.iconView = (ImageView) customTitle.findViewById(android.R.id.icon);
+        this.titleView = (TextView) customTitle.findViewById(android.R.id.title);
+    }
 
-	@Override
-	public DialogBuilder setIcon(final Drawable icon)
-	{
-		if (icon != null)
-		{
-			setCustomTitle(customTitle);
-			iconView.setImageDrawable(icon);
-			iconView.setVisibility(View.VISIBLE);
-		}
+    @Override
+    public DialogBuilder setIcon(final Drawable icon) {
+        if (icon != null) {
+            setCustomTitle(customTitle);
+            iconView.setImageDrawable(icon);
+            iconView.setVisibility(View.VISIBLE);
+        }
 
-		return this;
-	}
+        return this;
+    }
 
-	@Override
-	public DialogBuilder setIcon(final int iconId)
-	{
-		if (iconId != 0)
-		{
-			setCustomTitle(customTitle);
-			iconView.setImageResource(iconId);
-			iconView.setVisibility(View.VISIBLE);
-		}
+    @Override
+    public DialogBuilder setIcon(final int iconResId) {
+        if (iconResId != 0) {
+            setCustomTitle(customTitle);
+            iconView.setImageResource(iconResId);
+            iconView.setVisibility(View.VISIBLE);
+        }
 
-		return this;
-	}
+        return this;
+    }
 
-	@Override
-	public DialogBuilder setTitle(final CharSequence title)
-	{
-		if (title != null)
-		{
-			setCustomTitle(customTitle);
-			titleView.setText(title);
-		}
+    @Override
+    public DialogBuilder setTitle(final CharSequence title) {
+        if (title != null) {
+            setCustomTitle(customTitle);
+            titleView.setText(title);
+        }
 
-		return this;
-	}
+        return this;
+    }
 
-	@Override
-	public DialogBuilder setTitle(final int titleId)
-	{
-		if (titleId != 0)
-		{
-			setCustomTitle(customTitle);
-			titleView.setText(titleId);
-		}
+    @Override
+    public DialogBuilder setTitle(final int titleResId) {
+        if (titleResId != 0) {
+            setCustomTitle(customTitle);
+            titleView.setText(titleResId);
+        }
 
-		return this;
-	}
+        return this;
+    }
 
-	@Override
-	public DialogBuilder setMessage(CharSequence message)
-	{
-		super.setMessage(message);
+    @Override
+    public DialogBuilder setMessage(final CharSequence message) {
+        super.setMessage(message);
 
-		return this;
-	}
+        return this;
+    }
 
-	@Override
-	public DialogBuilder setMessage(int messageId)
-	{
-		super.setMessage(messageId);
+    @Override
+    public DialogBuilder setMessage(final int messageResId) {
+        super.setMessage(messageResId);
 
-		return this;
-	}
+        return this;
+    }
+
+    public DialogBuilder singleDismissButton(@Nullable final OnClickListener dismissListener) {
+        setNeutralButton(R.string.button_dismiss, dismissListener);
+
+        return this;
+    }
 }

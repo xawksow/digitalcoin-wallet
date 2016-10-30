@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2014 the original author or authors.
+ * Copyright 2011-2015 the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,302 +17,309 @@
 
 package de.schildbach.wallet.ui;
 
-import java.math.BigInteger;
-import java.util.Date;
+import javax.annotation.Nullable;
 
-import javax.annotation.CheckForNull;
-
-import android.app.Activity;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.database.Cursor;
-import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.app.LoaderManager.LoaderCallbacks;
-import android.support.v4.content.Loader;
-import android.text.format.DateUtils;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.ViewGroup;
-import android.widget.FrameLayout;
-import android.widget.TextView;
-
-import com.google.bitcoin.core.Wallet;
+import org.bitcoinj.core.Coin;
+import org.bitcoinj.utils.Fiat;
+import org.bitcoinj.wallet.Wallet;
 
 import de.schildbach.wallet.Configuration;
 import de.schildbach.wallet.Constants;
-import de.schildbach.wallet.ExchangeRatesProvider;
-import de.schildbach.wallet.ExchangeRatesProvider.ExchangeRate;
 import de.schildbach.wallet.WalletApplication;
-import de.schildbach.wallet.service.BlockchainService;
-import de.schildbach.wallet.util.WalletUtils;
+import de.schildbach.wallet.data.ExchangeRate;
+import de.schildbach.wallet.data.ExchangeRatesLoader;
+import de.schildbach.wallet.data.ExchangeRatesProvider;
+import de.schildbach.wallet.service.BlockchainState;
+import de.schildbach.wallet.service.BlockchainStateLoader;
+import de.schildbach.wallet.ui.send.SendCoinsActivity;
 import de.schildbach.wallet_test.R;
+
+import android.app.Activity;
+import android.app.Fragment;
+import android.app.LoaderManager;
+import android.app.LoaderManager.LoaderCallbacks;
+import android.content.Intent;
+import android.content.Loader;
+import android.database.Cursor;
+import android.os.Bundle;
+import android.text.format.DateUtils;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.TextView;
 
 /**
  * @author Andreas Schildbach
  */
-public final class WalletBalanceFragment extends Fragment
-{
-	private WalletApplication application;
-	private AbstractWalletActivity activity;
-	private Configuration config;
-	private Wallet wallet;
-	private LoaderManager loaderManager;
+public final class WalletBalanceFragment extends Fragment {
+    private WalletApplication application;
+    private AbstractWalletActivity activity;
+    private Configuration config;
+    private Wallet wallet;
+    private LoaderManager loaderManager;
 
-	private View viewBalance;
-	private CurrencyTextView viewBalanceBtc;
-	private FrameLayout viewBalanceLocalFrame;
-	private CurrencyTextView viewBalanceLocal;
-	private TextView viewProgress;
+    private View viewBalance;
+    private CurrencyTextView viewBalanceBtc;
+    private View viewBalanceTooMuch;
+    private CurrencyTextView viewBalanceLocal;
+    private TextView viewProgress;
 
-	private boolean showLocalBalance;
+    private boolean showLocalBalance;
+    private boolean installedFromGooglePlay;
 
-	@CheckForNull
-	private BigInteger balance = null;
-	@CheckForNull
-	private ExchangeRate exchangeRate = null;
+    @Nullable
+    private Coin balance = null;
+    @Nullable
+    private ExchangeRate exchangeRate = null;
+    @Nullable
+    private BlockchainState blockchainState = null;
 
-	private int download;
-	@CheckForNull
-	private Date bestChainDate = null;
-	private boolean replaying = false;
+    private static final int ID_BALANCE_LOADER = 0;
+    private static final int ID_RATE_LOADER = 1;
+    private static final int ID_BLOCKCHAIN_STATE_LOADER = 2;
 
-	private static final int ID_BALANCE_LOADER = 0;
-	private static final int ID_RATE_LOADER = 1;
+    private static final long BLOCKCHAIN_UPTODATE_THRESHOLD_MS = DateUtils.HOUR_IN_MILLIS;
+    private static final Coin SOME_BALANCE_THRESHOLD = Coin.COIN.divide(20);
+    private static final Coin TOO_MUCH_BALANCE_THRESHOLD = Coin.COIN.multiply(4);
 
-	@Override
-	public void onAttach(final Activity activity)
-	{
-		super.onAttach(activity);
+    @Override
+    public void onAttach(final Activity activity) {
+        super.onAttach(activity);
 
-		this.activity = (AbstractWalletActivity) activity;
-		this.application = (WalletApplication) activity.getApplication();
-		this.config = application.getConfiguration();
-		this.wallet = application.getWallet();
-		this.loaderManager = getLoaderManager();
+        this.activity = (AbstractWalletActivity) activity;
+        this.application = (WalletApplication) activity.getApplication();
+        this.config = application.getConfiguration();
+        this.wallet = application.getWallet();
+        this.loaderManager = getLoaderManager();
 
-		showLocalBalance = getResources().getBoolean(R.bool.show_local_balance);
-	}
+        showLocalBalance = getResources().getBoolean(R.bool.show_local_balance);
+        installedFromGooglePlay = "com.android.vending"
+                .equals(application.getPackageManager().getInstallerPackageName(application.getPackageName()));
+    }
 
-	@Override
-	public View onCreateView(final LayoutInflater inflater, final ViewGroup container, final Bundle savedInstanceState)
-	{
-		return inflater.inflate(R.layout.wallet_balance_fragment, container, false);
-	}
+    @Override
+    public void onCreate(final Bundle savedInstanceState) {
+        setHasOptionsMenu(true);
 
-	@Override
-	public void onViewCreated(final View view, final Bundle savedInstanceState)
-	{
-		super.onViewCreated(view, savedInstanceState);
+        super.onCreate(savedInstanceState);
+    }
 
-		final boolean showExchangeRatesOption = getResources().getBoolean(R.bool.show_exchange_rates_option);
+    @Override
+    public View onCreateView(final LayoutInflater inflater, final ViewGroup container,
+            final Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.wallet_balance_fragment, container, false);
+    }
 
-		viewBalance = view.findViewById(R.id.wallet_balance);
-		if (showExchangeRatesOption)
-		{
-			viewBalance.setOnClickListener(new OnClickListener()
-			{
-				@Override
-				public void onClick(final View v)
-				{
-					startActivity(new Intent(getActivity(), ExchangeRatesActivity.class));
-				}
-			});
-		}
-		else
-		{
-			viewBalance.setEnabled(false);
-		}
+    @Override
+    public void onViewCreated(final View view, final Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
-		viewBalanceBtc = (CurrencyTextView) view.findViewById(R.id.wallet_balance_btc);
+        final boolean showExchangeRatesOption = getResources().getBoolean(R.bool.show_exchange_rates_option);
 
-		viewBalanceLocalFrame = (FrameLayout) view.findViewById(R.id.wallet_balance_local_frame);
-		if (showExchangeRatesOption)
-			viewBalanceLocalFrame.setForeground(getResources().getDrawable(R.drawable.dropdown_ic_arrow_small));
+        viewBalance = view.findViewById(R.id.wallet_balance);
+        if (showExchangeRatesOption) {
+            viewBalance.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(final View v) {
+                    startActivity(new Intent(getActivity(), ExchangeRatesActivity.class));
+                }
+            });
+        } else {
+            viewBalance.setEnabled(false);
+        }
 
-		viewBalanceLocal = (CurrencyTextView) view.findViewById(R.id.wallet_balance_local);
-		viewBalanceLocal.setPrecision(Constants.LOCAL_PRECISION, 0);
-		viewBalanceLocal.setInsignificantRelativeSize(1);
-		viewBalanceLocal.setStrikeThru(Constants.TEST);
+        viewBalanceBtc = (CurrencyTextView) view.findViewById(R.id.wallet_balance_btc);
+        viewBalanceBtc.setPrefixScaleX(0.9f);
 
-		viewProgress = (TextView) view.findViewById(R.id.wallet_balance_progress);
-	}
+        viewBalanceTooMuch = view.findViewById(R.id.wallet_balance_too_much);
 
-	@Override
-	public void onResume()
-	{
-		super.onResume();
+        viewBalanceLocal = (CurrencyTextView) view.findViewById(R.id.wallet_balance_local);
+        viewBalanceLocal.setInsignificantRelativeSize(1);
+        viewBalanceLocal.setStrikeThru(Constants.TEST);
 
-		activity.registerReceiver(broadcastReceiver, new IntentFilter(BlockchainService.ACTION_BLOCKCHAIN_STATE));
+        viewProgress = (TextView) view.findViewById(R.id.wallet_balance_progress);
+    }
 
-		loaderManager.initLoader(ID_BALANCE_LOADER, null, balanceLoaderCallbacks);
-		loaderManager.initLoader(ID_RATE_LOADER, null, rateLoaderCallbacks);
+    @Override
+    public void onResume() {
+        super.onResume();
 
-		updateView();
-	}
+        loaderManager.initLoader(ID_BALANCE_LOADER, null, balanceLoaderCallbacks);
+        loaderManager.initLoader(ID_RATE_LOADER, null, rateLoaderCallbacks);
+        loaderManager.initLoader(ID_BLOCKCHAIN_STATE_LOADER, null, blockchainStateLoaderCallbacks);
 
-	@Override
-	public void onPause()
-	{
-		loaderManager.destroyLoader(ID_RATE_LOADER);
-		loaderManager.destroyLoader(ID_BALANCE_LOADER);
+        updateView();
+    }
 
-		activity.unregisterReceiver(broadcastReceiver);
+    @Override
+    public void onPause() {
+        loaderManager.destroyLoader(ID_BLOCKCHAIN_STATE_LOADER);
+        loaderManager.destroyLoader(ID_RATE_LOADER);
+        loaderManager.destroyLoader(ID_BALANCE_LOADER);
 
-		super.onPause();
-	}
+        super.onPause();
+    }
 
-	private void updateView()
-	{
-		if (!isAdded())
-			return;
+    @Override
+    public void onCreateOptionsMenu(final Menu menu, final MenuInflater inflater) {
+        inflater.inflate(R.menu.wallet_balance_fragment_options, menu);
 
-		final boolean showProgress;
+        super.onCreateOptionsMenu(menu, inflater);
+    }
 
-		if (bestChainDate != null)
-		{
-			final long blockchainLag = System.currentTimeMillis() - bestChainDate.getTime();
-			final boolean blockchainUptodate = blockchainLag < Constants.BLOCKCHAIN_UPTODATE_THRESHOLD_MS;
-			final boolean downloadOk = download == BlockchainService.ACTION_BLOCKCHAIN_STATE_DOWNLOAD_OK;
+    @Override
+    public void onPrepareOptionsMenu(final Menu menu) {
+        final boolean hasSomeBalance = balance != null && !balance.isLessThan(SOME_BALANCE_THRESHOLD);
+        menu.findItem(R.id.wallet_balance_options_donate)
+                .setVisible(Constants.DONATION_ADDRESS != null && (!installedFromGooglePlay || hasSomeBalance));
 
-			showProgress = !(blockchainUptodate || !replaying);
+        super.onPrepareOptionsMenu(menu);
+    }
 
-			final String downloading = getString(downloadOk ? R.string.blockchain_state_progress_downloading
-					: R.string.blockchain_state_progress_stalled);
+    @Override
+    public boolean onOptionsItemSelected(final MenuItem item) {
+        switch (item.getItemId()) {
+        case R.id.wallet_balance_options_donate:
+            handleDonate();
+            return true;
+        }
 
-			if (blockchainLag < 2 * DateUtils.DAY_IN_MILLIS)
-			{
-				final long hours = blockchainLag / DateUtils.HOUR_IN_MILLIS;
-				viewProgress.setText(getString(R.string.blockchain_state_progress_hours, downloading, hours));
-			}
-			else if (blockchainLag < 2 * DateUtils.WEEK_IN_MILLIS)
-			{
-				final long days = blockchainLag / DateUtils.DAY_IN_MILLIS;
-				viewProgress.setText(getString(R.string.blockchain_state_progress_days, downloading, days));
-			}
-			else if (blockchainLag < 90 * DateUtils.DAY_IN_MILLIS)
-			{
-				final long weeks = blockchainLag / DateUtils.WEEK_IN_MILLIS;
-				viewProgress.setText(getString(R.string.blockchain_state_progress_weeks, downloading, weeks));
-			}
-			else
-			{
-				final long months = blockchainLag / (30 * DateUtils.DAY_IN_MILLIS);
-				viewProgress.setText(getString(R.string.blockchain_state_progress_months, downloading, months));
-			}
-		}
-		else
-		{
-			showProgress = false;
-		}
+        return super.onOptionsItemSelected(item);
+    }
 
-		if (!showProgress)
-		{
-			viewBalance.setVisibility(View.VISIBLE);
+    private void handleDonate() {
+        SendCoinsActivity.startDonate(activity, null, null, 0);
+    }
 
-			if (!showLocalBalance)
-				viewBalanceLocalFrame.setVisibility(View.GONE);
+    private void updateView() {
+        if (!isAdded())
+            return;
 
-			if (balance != null)
-			{
-				viewBalanceBtc.setVisibility(View.VISIBLE);
-				viewBalanceBtc.setPrecision(config.getBtcPrecision(), config.getBtcShift());
-				viewBalanceBtc.setPrefix(config.getBtcPrefix());
-				viewBalanceBtc.setAmount(balance);
+        final boolean showProgress;
 
-				if (showLocalBalance)
-				{
-					if (exchangeRate != null)
-					{
-						final BigInteger localValue = WalletUtils.localValue(balance, exchangeRate.rate);
-						viewBalanceLocalFrame.setVisibility(View.VISIBLE);
-						viewBalanceLocal.setPrefix(Constants.PREFIX_ALMOST_EQUAL_TO + exchangeRate.currencyCode);
-						viewBalanceLocal.setAmount(localValue);
-						viewBalanceLocal.setTextColor(getResources().getColor(R.color.fg_less_significant));
-					}
-					else
-					{
-						viewBalanceLocalFrame.setVisibility(View.INVISIBLE);
-					}
-				}
-			}
-			else
-			{
-				viewBalanceBtc.setVisibility(View.INVISIBLE);
-			}
+        if (blockchainState != null && blockchainState.bestChainDate != null) {
+            final long blockchainLag = System.currentTimeMillis() - blockchainState.bestChainDate.getTime();
+            final boolean blockchainUptodate = blockchainLag < BLOCKCHAIN_UPTODATE_THRESHOLD_MS;
+            final boolean noImpediments = blockchainState.impediments.isEmpty();
 
-			viewProgress.setVisibility(View.GONE);
-		}
-		else
-		{
-			viewProgress.setVisibility(View.VISIBLE);
-			viewBalance.setVisibility(View.INVISIBLE);
-		}
-	}
+            showProgress = !(blockchainUptodate || !blockchainState.replaying);
 
-	private final BlockchainBroadcastReceiver broadcastReceiver = new BlockchainBroadcastReceiver();
+            final String downloading = getString(noImpediments ? R.string.blockchain_state_progress_downloading
+                    : R.string.blockchain_state_progress_stalled);
 
-	private final class BlockchainBroadcastReceiver extends BroadcastReceiver
-	{
-		@Override
-		public void onReceive(final Context context, final Intent intent)
-		{
-			download = intent.getIntExtra(BlockchainService.ACTION_BLOCKCHAIN_STATE_DOWNLOAD, BlockchainService.ACTION_BLOCKCHAIN_STATE_DOWNLOAD_OK);
-			bestChainDate = (Date) intent.getSerializableExtra(BlockchainService.ACTION_BLOCKCHAIN_STATE_BEST_CHAIN_DATE);
-			replaying = intent.getBooleanExtra(BlockchainService.ACTION_BLOCKCHAIN_STATE_REPLAYING, false);
+            if (blockchainLag < 2 * DateUtils.DAY_IN_MILLIS) {
+                final long hours = blockchainLag / DateUtils.HOUR_IN_MILLIS;
+                viewProgress.setText(getString(R.string.blockchain_state_progress_hours, downloading, hours));
+            } else if (blockchainLag < 2 * DateUtils.WEEK_IN_MILLIS) {
+                final long days = blockchainLag / DateUtils.DAY_IN_MILLIS;
+                viewProgress.setText(getString(R.string.blockchain_state_progress_days, downloading, days));
+            } else if (blockchainLag < 90 * DateUtils.DAY_IN_MILLIS) {
+                final long weeks = blockchainLag / DateUtils.WEEK_IN_MILLIS;
+                viewProgress.setText(getString(R.string.blockchain_state_progress_weeks, downloading, weeks));
+            } else {
+                final long months = blockchainLag / (30 * DateUtils.DAY_IN_MILLIS);
+                viewProgress.setText(getString(R.string.blockchain_state_progress_months, downloading, months));
+            }
+        } else {
+            showProgress = false;
+        }
 
-			updateView();
-		}
-	}
+        if (!showProgress) {
+            viewBalance.setVisibility(View.VISIBLE);
 
-	private final LoaderCallbacks<BigInteger> balanceLoaderCallbacks = new LoaderManager.LoaderCallbacks<BigInteger>()
-	{
-		@Override
-		public Loader<BigInteger> onCreateLoader(final int id, final Bundle args)
-		{
-			return new WalletBalanceLoader(activity, wallet);
-		}
+            if (!showLocalBalance)
+                viewBalanceLocal.setVisibility(View.GONE);
 
-		@Override
-		public void onLoadFinished(final Loader<BigInteger> loader, final BigInteger balance)
-		{
-			WalletBalanceFragment.this.balance = balance;
+            if (balance != null) {
+                viewBalanceBtc.setVisibility(View.VISIBLE);
+                viewBalanceBtc.setFormat(config.getFormat());
+                viewBalanceBtc.setAmount(balance);
 
-			updateView();
-		}
+                final boolean tooMuch = balance.isGreaterThan(TOO_MUCH_BALANCE_THRESHOLD);
 
-		@Override
-		public void onLoaderReset(final Loader<BigInteger> loader)
-		{
-		}
-	};
+                viewBalanceTooMuch.setVisibility(tooMuch ? View.VISIBLE : View.GONE);
 
-	private final LoaderCallbacks<Cursor> rateLoaderCallbacks = new LoaderManager.LoaderCallbacks<Cursor>()
-	{
-		@Override
-		public Loader<Cursor> onCreateLoader(final int id, final Bundle args)
-		{
-			return new ExchangeRateLoader(activity, config);
-		}
+                if (showLocalBalance) {
+                    if (exchangeRate != null) {
+                        final Fiat localValue = exchangeRate.rate.coinToFiat(balance);
+                        viewBalanceLocal.setVisibility(View.VISIBLE);
+                        viewBalanceLocal.setFormat(Constants.LOCAL_FORMAT.code(0,
+                                Constants.PREFIX_ALMOST_EQUAL_TO + exchangeRate.getCurrencyCode()));
+                        viewBalanceLocal.setAmount(localValue);
+                        viewBalanceLocal.setTextColor(getResources().getColor(R.color.fg_less_significant));
+                    } else {
+                        viewBalanceLocal.setVisibility(View.INVISIBLE);
+                    }
+                }
+            } else {
+                viewBalanceBtc.setVisibility(View.INVISIBLE);
+            }
 
-		@Override
-		public void onLoadFinished(final Loader<Cursor> loader, final Cursor data)
-		{
-			if (data != null)
-			{
-				data.moveToFirst();
-				exchangeRate = ExchangeRatesProvider.getExchangeRate(data);
-				updateView();
-			}
-		}
+            viewProgress.setVisibility(View.GONE);
+        } else {
+            viewProgress.setVisibility(View.VISIBLE);
+            viewBalance.setVisibility(View.INVISIBLE);
+        }
+    }
 
-		@Override
-		public void onLoaderReset(final Loader<Cursor> loader)
-		{
-		}
-	};
+    private final LoaderCallbacks<BlockchainState> blockchainStateLoaderCallbacks = new LoaderManager.LoaderCallbacks<BlockchainState>() {
+        @Override
+        public Loader<BlockchainState> onCreateLoader(final int id, final Bundle args) {
+            return new BlockchainStateLoader(activity);
+        }
+
+        @Override
+        public void onLoadFinished(final Loader<BlockchainState> loader, final BlockchainState blockchainState) {
+            WalletBalanceFragment.this.blockchainState = blockchainState;
+
+            updateView();
+        }
+
+        @Override
+        public void onLoaderReset(final Loader<BlockchainState> loader) {
+        }
+    };
+
+    private final LoaderCallbacks<Coin> balanceLoaderCallbacks = new LoaderManager.LoaderCallbacks<Coin>() {
+        @Override
+        public Loader<Coin> onCreateLoader(final int id, final Bundle args) {
+            return new WalletBalanceLoader(activity, wallet);
+        }
+
+        @Override
+        public void onLoadFinished(final Loader<Coin> loader, final Coin balance) {
+            WalletBalanceFragment.this.balance = balance;
+
+            activity.invalidateOptionsMenu();
+            updateView();
+        }
+
+        @Override
+        public void onLoaderReset(final Loader<Coin> loader) {
+        }
+    };
+
+    private final LoaderCallbacks<Cursor> rateLoaderCallbacks = new LoaderManager.LoaderCallbacks<Cursor>() {
+        @Override
+        public Loader<Cursor> onCreateLoader(final int id, final Bundle args) {
+            return new ExchangeRatesLoader(activity, config);
+        }
+
+        @Override
+        public void onLoadFinished(final Loader<Cursor> loader, final Cursor data) {
+            if (data != null && data.getCount() > 0) {
+                data.moveToFirst();
+                exchangeRate = ExchangeRatesProvider.getExchangeRate(data);
+                updateView();
+            }
+        }
+
+        @Override
+        public void onLoaderReset(final Loader<Cursor> loader) {
+        }
+    };
 }

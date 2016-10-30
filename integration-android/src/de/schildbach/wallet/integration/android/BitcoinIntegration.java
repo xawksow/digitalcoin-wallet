@@ -1,5 +1,5 @@
 /**
- * Copyright 2012-2013 the original author or authors.
+ * Copyright 2012-2014 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,163 +26,251 @@ import android.widget.Toast;
 /**
  * @author Andreas Schildbach
  */
-public final class BitcoinIntegration
-{
-	private static final String INTENT_EXTRA_TRANSACTION_HASH = "transaction_hash";
+public final class BitcoinIntegration {
+    private static final String INTENT_EXTRA_PAYMENTREQUEST = "paymentrequest";
+    private static final String INTENT_EXTRA_PAYMENT = "payment";
+    private static final String INTENT_EXTRA_TRANSACTION_HASH = "transaction_hash";
 
-	/**
-	 * Request any amount of Bitcoins (probably a donation) from user, without feedback from the app.
-	 * 
-	 * @param context
-	 *            Android context
-	 * @param address
-	 *            Bitcoin address
-	 */
-	public static void request(final Context context, final String address)
-	{
-		final Intent intent = makeIntent(address, null);
+    private static final String MIMETYPE_PAYMENTREQUEST = "application/bitcoin-paymentrequest"; // BIP 71
 
-		start(context, intent);
-	}
+    /**
+     * Request any amount of Bitcoins (probably a donation) from user, without feedback from the app.
+     * 
+     * @param context
+     *            Android context
+     * @param address
+     *            Bitcoin address
+     */
+    public static void request(final Context context, final String address) {
+        final Intent intent = makeBitcoinUriIntent(address, null);
 
-	/**
-	 * Request specific amount of Bitcoins from user, without feedback from the app.
-	 * 
-	 * @param context
-	 *            Android context
-	 * @param address
-	 *            Bitcoin address
-	 * @param amount
-	 *            Bitcoin amount in nanocoins
-	 */
-	public static void request(final Context context, final String address, final long amount)
-	{
-		final Intent intent = makeIntent(address, amount);
+        start(context, intent);
+    }
 
-		start(context, intent);
-	}
+    /**
+     * Request specific amount of Bitcoins from user, without feedback from the app.
+     * 
+     * @param context
+     *            Android context
+     * @param address
+     *            Bitcoin address
+     * @param amount
+     *            Bitcoin amount in satoshis
+     */
+    public static void request(final Context context, final String address, final long amount) {
+        final Intent intent = makeBitcoinUriIntent(address, amount);
 
-	/**
-	 * Request any amount of Bitcoins (probably a donation) from user, with feedback from the app. Result intent can be
-	 * received by overriding {@link android.app.Activity#onActivityResult()}. Result indicates either
-	 * {@link Activity#RESULT_OK} or {@link Activity#RESULT_CANCELED}. In the success case, use
-	 * {@link #transactionHashFromResult(Intent)} to read the transaction hash from the intent.
-	 * 
-	 * Warning: A success indication is no guarantee! To be on the safe side, you must drive your own Bitcoin
-	 * infrastructure and validate the transaction.
-	 * 
-	 * @param context
-	 *            Android context
-	 * @param address
-	 *            Bitcoin address
-	 */
-	public static void requestForResult(final Activity activity, final int requestCode, final String address)
-	{
-		final Intent intent = makeIntent(address, null);
+        start(context, intent);
+    }
 
-		startForResult(activity, requestCode, intent);
-	}
+    /**
+     * Request payment from user, without feedback from the app.
+     * 
+     * @param context
+     *            Android context
+     * @param paymentRequest
+     *            BIP70 formatted payment request
+     */
+    public static void request(final Context context, final byte[] paymentRequest) {
+        final Intent intent = makePaymentRequestIntent(paymentRequest);
 
-	/**
-	 * Request specific amount of Bitcoins from user, with feedback from the app. Result intent can be received by
-	 * overriding {@link android.app.Activity#onActivityResult()}. Result indicates either {@link Activity#RESULT_OK} or
-	 * {@link Activity#RESULT_CANCELED}. In the success case, use {@link #transactionHashFromResult(Intent)} to read the
-	 * transaction hash from the intent.
-	 * 
-	 * Warning: A success indication is no guarantee! To be on the safe side, you must drive your own Bitcoin
-	 * infrastructure and validate the transaction.
-	 * 
-	 * @param context
-	 *            Android context
-	 * @param address
-	 *            Bitcoin address
-	 */
-	public static void requestForResult(final Activity activity, final int requestCode, final String address, final long amount)
-	{
-		final Intent intent = makeIntent(address, amount);
+        start(context, intent);
+    }
 
-		startForResult(activity, requestCode, intent);
-	}
+    /**
+     * Request any amount of Bitcoins (probably a donation) from user, with feedback from the app. Result
+     * intent can be received by overriding {@link android.app.Activity#onActivityResult()}. Result indicates
+     * either {@link Activity#RESULT_OK} or {@link Activity#RESULT_CANCELED}. In the success case, use
+     * {@link #transactionHashFromResult(Intent)} to read the transaction hash from the intent.
+     * 
+     * Warning: A success indication is no guarantee! To be on the safe side, you must drive your own Bitcoin
+     * infrastructure and validate the transaction.
+     * 
+     * @param activity
+     *            Calling Android activity
+     * @param requestCode
+     *            Code identifying the call when {@link android.app.Activity#onActivityResult()} is called
+     *            back
+     * @param address
+     *            Bitcoin address
+     */
+    public static void requestForResult(final Activity activity, final int requestCode, final String address) {
+        final Intent intent = makeBitcoinUriIntent(address, null);
 
-	/**
-	 * Put transaction hash into result intent. Meant for usage by Bitcoin wallet applications.
-	 * 
-	 * @param result
-	 *            result intent
-	 * @param txHash
-	 *            transaction hash
-	 */
-	public static void transactionHashToResult(final Intent result, final String txHash)
-	{
-		result.putExtra(INTENT_EXTRA_TRANSACTION_HASH, txHash);
-		result.putExtra(INTENT_EXTRA_TRANSACTION_HASH_OLD, txHash);
-	}
+        startForResult(activity, requestCode, intent);
+    }
 
-	/**
-	 * Get transaction hash from result intent. Meant for usage by applications initiating a Bitcoin payment.
-	 * 
-	 * You can use this hash to request the transaction from the Bitcoin network, in order to validate. For this, you
-	 * need your own Bitcoin infrastructure though. There is no guarantee that the transaction has ever been broadcasted
-	 * to the Bitcoin network.
-	 * 
-	 * @param result
-	 *            result intent
-	 * @return transaction hash
-	 */
-	public static String transactionHashFromResult(final Intent result)
-	{
-		final String txHash = result.getStringExtra(INTENT_EXTRA_TRANSACTION_HASH);
+    /**
+     * Request specific amount of Bitcoins from user, with feedback from the app. Result intent can be
+     * received by overriding {@link android.app.Activity#onActivityResult()}. Result indicates either
+     * {@link Activity#RESULT_OK} or {@link Activity#RESULT_CANCELED}. In the success case, use
+     * {@link #transactionHashFromResult(Intent)} to read the transaction hash from the intent.
+     * 
+     * Warning: A success indication is no guarantee! To be on the safe side, you must drive your own Bitcoin
+     * infrastructure and validate the transaction.
+     * 
+     * @param activity
+     *            Calling Android activity
+     * @param requestCode
+     *            Code identifying the call when {@link android.app.Activity#onActivityResult()} is called
+     *            back
+     * @param address
+     *            Bitcoin address
+     */
+    public static void requestForResult(final Activity activity, final int requestCode, final String address,
+            final long amount) {
+        final Intent intent = makeBitcoinUriIntent(address, amount);
 
-		return txHash;
-	}
+        startForResult(activity, requestCode, intent);
+    }
 
-	private static final int NANOCOINS_PER_COIN = 100000000;
+    /**
+     * Request payment from user, with feedback from the app. Result intent can be received by overriding
+     * {@link android.app.Activity#onActivityResult()}. Result indicates either {@link Activity#RESULT_OK} or
+     * {@link Activity#RESULT_CANCELED}. In the success case, use {@link #transactionHashFromResult(Intent)}
+     * to read the transaction hash from the intent.
+     * 
+     * Warning: A success indication is no guarantee! To be on the safe side, you must drive your own Bitcoin
+     * infrastructure and validate the transaction.
+     * 
+     * @param activity
+     *            Calling Android activity
+     * @param requestCode
+     *            Code identifying the call when {@link android.app.Activity#onActivityResult()} is called
+     *            back
+     * @param paymentRequest
+     *            BIP70 formatted payment request
+     */
+    public static void requestForResult(final Activity activity, final int requestCode, final byte[] paymentRequest) {
+        final Intent intent = makePaymentRequestIntent(paymentRequest);
 
-	private static Intent makeIntent(final String address, final Long amount)
-	{
-		final StringBuilder uri = new StringBuilder("bitcoin:");
-		if (address != null)
-			uri.append(address);
-		if (amount != null)
-			uri.append("?amount=").append(String.format("%d.%08d", amount / NANOCOINS_PER_COIN, amount % NANOCOINS_PER_COIN));
+        startForResult(activity, requestCode, intent);
+    }
 
-		final Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri.toString()));
+    /**
+     * Get payment request from intent. Meant for usage by applications accepting payment requests.
+     * 
+     * @param intent
+     *            intent
+     * @return payment request or null
+     */
+    public static byte[] paymentRequestFromIntent(final Intent intent) {
+        final byte[] paymentRequest = intent.getByteArrayExtra(INTENT_EXTRA_PAYMENTREQUEST);
 
-		return intent;
-	}
+        return paymentRequest;
+    }
 
-	private static void start(final Context context, final Intent intent)
-	{
-		final PackageManager pm = context.getPackageManager();
-		if (pm.resolveActivity(intent, 0) != null)
-			context.startActivity(intent);
-		else
-			redirectToDownload(context);
-	}
+    /**
+     * Put BIP70 payment message into result intent. Meant for usage by Bitcoin wallet applications.
+     * 
+     * @param result
+     *            result intent
+     * @param payment
+     *            payment message
+     */
+    public static void paymentToResult(final Intent result, final byte[] payment) {
+        result.putExtra(INTENT_EXTRA_PAYMENT, payment);
+    }
 
-	private static void startForResult(final Activity activity, final int requestCode, final Intent intent)
-	{
-		final PackageManager pm = activity.getPackageManager();
-		if (pm.resolveActivity(intent, 0) != null)
-			activity.startActivityForResult(intent, requestCode);
-		else
-			redirectToDownload(activity);
-	}
+    /**
+     * Get BIP70 payment message from result intent. Meant for usage by applications initiating a Bitcoin
+     * payment.
+     * 
+     * You can use the transactions contained in the payment to validate the payment. For this, you need your
+     * own Bitcoin infrastructure though. There is no guarantee that the payment will ever confirm.
+     * 
+     * @param result
+     *            result intent
+     * @return payment message
+     */
+    public static byte[] paymentFromResult(final Intent result) {
+        final byte[] payment = result.getByteArrayExtra(INTENT_EXTRA_PAYMENT);
 
-	private static void redirectToDownload(final Context context)
-	{
-		Toast.makeText(context, "No Bitcoin application found.\nPlease install Bitcoin Wallet.", Toast.LENGTH_LONG).show();
+        return payment;
+    }
 
-		final Intent marketIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=de.schildbach.wallet"));
-		final Intent binaryIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://code.google.com/p/bitcoin-wallet/downloads/list"));
+    /**
+     * Put transaction hash into result intent. Meant for usage by Bitcoin wallet applications.
+     * 
+     * @param result
+     *            result intent
+     * @param txHash
+     *            transaction hash
+     */
+    public static void transactionHashToResult(final Intent result, final String txHash) {
+        result.putExtra(INTENT_EXTRA_TRANSACTION_HASH, txHash);
+    }
 
-		final PackageManager pm = context.getPackageManager();
-		if (pm.resolveActivity(marketIntent, 0) != null)
-			context.startActivity(marketIntent);
-		else if (pm.resolveActivity(binaryIntent, 0) != null)
-			context.startActivity(binaryIntent);
-		// else out of luck
-	}
+    /**
+     * Get transaction hash from result intent. Meant for usage by applications initiating a Bitcoin payment.
+     * 
+     * You can use this hash to request the transaction from the Bitcoin network, in order to validate. For
+     * this, you need your own Bitcoin infrastructure though. There is no guarantee that the transaction has
+     * ever been broadcasted to the Bitcoin network.
+     * 
+     * @param result
+     *            result intent
+     * @return transaction hash
+     */
+    public static String transactionHashFromResult(final Intent result) {
+        final String txHash = result.getStringExtra(INTENT_EXTRA_TRANSACTION_HASH);
 
-	private static final String INTENT_EXTRA_TRANSACTION_HASH_OLD = "transaction_id";
+        return txHash;
+    }
+
+    private static final int SATOSHIS_PER_COIN = 100000000;
+
+    private static Intent makeBitcoinUriIntent(final String address, final Long amount) {
+        final StringBuilder uri = new StringBuilder("bitcoin:");
+        if (address != null)
+            uri.append(address);
+        if (amount != null)
+            uri.append("?amount=")
+                    .append(String.format("%d.%08d", amount / SATOSHIS_PER_COIN, amount % SATOSHIS_PER_COIN));
+
+        final Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(uri.toString()));
+
+        return intent;
+    }
+
+    private static Intent makePaymentRequestIntent(final byte[] paymentRequest) {
+        final Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setType(MIMETYPE_PAYMENTREQUEST);
+        intent.putExtra(INTENT_EXTRA_PAYMENTREQUEST, paymentRequest);
+
+        return intent;
+    }
+
+    private static void start(final Context context, final Intent intent) {
+        final PackageManager pm = context.getPackageManager();
+        if (pm.resolveActivity(intent, 0) != null)
+            context.startActivity(intent);
+        else
+            redirectToDownload(context);
+    }
+
+    private static void startForResult(final Activity activity, final int requestCode, final Intent intent) {
+        final PackageManager pm = activity.getPackageManager();
+        if (pm.resolveActivity(intent, 0) != null)
+            activity.startActivityForResult(intent, requestCode);
+        else
+            redirectToDownload(activity);
+    }
+
+    private static void redirectToDownload(final Context context) {
+        Toast.makeText(context, "No Bitcoin application found.\nPlease install Bitcoin Wallet.", Toast.LENGTH_LONG)
+                .show();
+
+        final Intent marketIntent = new Intent(Intent.ACTION_VIEW,
+                Uri.parse("market://details?id=de.schildbach.wallet"));
+        final Intent binaryIntent = new Intent(Intent.ACTION_VIEW,
+                Uri.parse("https://github.com/bitcoin-wallet/bitcoin-wallet/releases"));
+
+        final PackageManager pm = context.getPackageManager();
+        if (pm.resolveActivity(marketIntent, 0) != null)
+            context.startActivity(marketIntent);
+        else if (pm.resolveActivity(binaryIntent, 0) != null)
+            context.startActivity(binaryIntent);
+        // else out of luck
+    }
 }

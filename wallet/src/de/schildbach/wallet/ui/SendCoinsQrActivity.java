@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,76 +17,77 @@
 
 package de.schildbach.wallet.ui;
 
+import org.bitcoinj.core.Transaction;
+import org.bitcoinj.core.VerificationException;
+import org.bitcoinj.core.VersionedChecksummedBytes;
+
+import de.schildbach.wallet.WalletApplication;
+import de.schildbach.wallet.data.PaymentIntent;
+import de.schildbach.wallet.ui.InputParser.StringInputParser;
+import de.schildbach.wallet.ui.send.SendCoinsActivity;
+import de.schildbach.wallet.ui.send.SweepWalletActivity;
+
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.os.Bundle;
 
-import com.google.bitcoin.core.Transaction;
-
-import de.schildbach.wallet.PaymentIntent;
-import de.schildbach.wallet.ui.InputParser.StringInputParser;
-
 /**
  * @author Andreas Schildbach
  */
-public final class SendCoinsQrActivity extends AbstractOnDemandServiceActivity
-{
-	private static final int REQUEST_CODE_SCAN = 0;
+public final class SendCoinsQrActivity extends Activity {
+    private static final int REQUEST_CODE_SCAN = 0;
 
-	@Override
-	protected void onCreate(final Bundle savedInstanceState)
-	{
-		super.onCreate(savedInstanceState);
+    @Override
+    protected void onCreate(final Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-		startActivityForResult(new Intent(this, ScanActivity.class), REQUEST_CODE_SCAN);
-	}
+        startActivityForResult(new Intent(this, ScanActivity.class), REQUEST_CODE_SCAN);
+    }
 
-	@Override
-	public void onActivityResult(final int requestCode, final int resultCode, final Intent intent)
-	{
-		if (requestCode == REQUEST_CODE_SCAN && resultCode == Activity.RESULT_OK)
-		{
-			final String input = intent.getStringExtra(ScanActivity.INTENT_EXTRA_RESULT);
+    @Override
+    public void onActivityResult(final int requestCode, final int resultCode, final Intent intent) {
+        if (requestCode == REQUEST_CODE_SCAN && resultCode == Activity.RESULT_OK) {
+            final String input = intent.getStringExtra(ScanActivity.INTENT_EXTRA_RESULT);
 
-			new StringInputParser(input)
-			{
-				@Override
-				protected void handlePaymentIntent(final PaymentIntent paymentIntent)
-				{
-					SendCoinsActivity.start(SendCoinsQrActivity.this, paymentIntent);
+            new StringInputParser(input) {
+                @Override
+                protected void handlePaymentIntent(final PaymentIntent paymentIntent) {
+                    SendCoinsActivity.start(SendCoinsQrActivity.this, paymentIntent);
 
-					SendCoinsQrActivity.this.finish();
-				}
+                    SendCoinsQrActivity.this.finish();
+                }
 
-				@Override
-				protected void handleDirectTransaction(final Transaction transaction)
-				{
-					processDirectTransaction(transaction);
+                @Override
+                protected void handlePrivateKey(final VersionedChecksummedBytes key) {
+                    SweepWalletActivity.start(SendCoinsQrActivity.this, key);
 
-					SendCoinsQrActivity.this.finish();
-				}
+                    SendCoinsQrActivity.this.finish();
+                }
 
-				@Override
-				protected void error(final int messageResId, final Object... messageArgs)
-				{
-					dialog(SendCoinsQrActivity.this, dismissListener, 0, messageResId, messageArgs);
-				}
+                @Override
+                protected void handleDirectTransaction(final Transaction transaction) throws VerificationException {
+                    final WalletApplication application = (WalletApplication) getApplication();
+                    application.processDirectTransaction(transaction);
 
-				private final OnClickListener dismissListener = new OnClickListener()
-				{
-					@Override
-					public void onClick(final DialogInterface dialog, final int which)
-					{
-						SendCoinsQrActivity.this.finish();
-					}
-				};
-			}.parse();
-		}
-		else
-		{
-			finish();
-		}
-	}
+                    SendCoinsQrActivity.this.finish();
+                }
+
+                @Override
+                protected void error(final int messageResId, final Object... messageArgs) {
+                    dialog(SendCoinsQrActivity.this, dismissListener, 0, messageResId, messageArgs);
+                }
+
+                private final OnClickListener dismissListener = new OnClickListener() {
+                    @Override
+                    public void onClick(final DialogInterface dialog, final int which) {
+                        SendCoinsQrActivity.this.finish();
+                    }
+                };
+            }.parse();
+        } else {
+            finish();
+        }
+    }
 }

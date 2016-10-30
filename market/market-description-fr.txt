@@ -1,22 +1,36 @@
-Ayez vos Bitcoins toujours avec vous dans votre poche ! Payez rapidement en numérisant un code-QR. En tant que marchant vous recevez les paiements de manière fiable et instantanée. Bitcoin Wallet est la première appli Bitcoin mobile et sans doute aussi la plus sécuritaire !
+<b>Ayez vos bitcoins toujours avec vous dans votre poche !<b> Payez rapidement en numérisant un code QR. En tant que marchand, vous recevez les paiements de manière fiable et instantanée. Bitcoin Wallet est la première appli Bitcoin mobile et sans doute aussi la plus sûre !
 
-FONCTIONS :
 
-• Pas d'inscription, de service Web ou de nuage de nécessaire ! Ce portefeuille est décentralisé et de pair-à-pair.
-• Affichage du montant de Bitcoin en BTC et mBTC.
-• Conversion de et vers des devises nationales.
-• Envoi et réception des Bitcoin via NFC, codes QR ou des URLs Bitcoin.
-• Carnet d'adresse pour les adresses Bitcoin utilisées régulièrement.
+<b>CARACTÉRISTIQUES</b>
+
+• Pas d'inscription, de service Web ou de nuage de nécessaire ! Ce porte-monnaie est décentralisé et de pair-à-pair.
+• Affichage du montant de bitcoins en BTC, mBTC et µBTC.
+• Conversion vers et depuis des devises nationales.
+• Envoi et réception de bitcoins par NFC, codes QR ou URL Bitcoin
+• Carnet d'adresses pour les adresses Bitcoin utilisées régulièrement.
 • Quand vous êtes hors-ligne vous pouvez quand même payez via Bluetooth.
 • Notification du système pour les pièces reçues.
-• Widget affichant le solde Bitcoin.
+• Balayage des porte-monnaies papier (c.-à-d. ceux utilisés pour le stockage à froid).
+• Widget applicatif pour le solde en bitcoin.
 
-Vous pouvez en apprendre plus au sujet de Bitcoin sur
-http://bitcoin.org
 
-Si vous voulez contribuer à Bitcoin Wallet, le projet se trouve sur
-https://github.com/schildbach/bitcoin-wallet
+<b>CONTRIBUER</b>
 
-Licence : GPLv3
-Utilisez à vos propres risques !
-http://www.gnu.org/licenses/gpl-3.0.fr.html
+Bitcoin Wallet est un <b>logiciel à code source ouvert</b> et <b>libre</b>. Licence : GPLv3
+https://www.gnu.org/licenses/gpl-3.0.fr.html
+
+Notre code source est proposée sur GutHub :
+https://github.com/bitcoin-wallet/bitcoin-wallet
+
+Toutes les traductions sont gérées sur Transifex :
+https://www.transifex.com/bitcoin-wallet/bitcoin-wallet/
+
+
+<b>TÉMOIGNAGES</b>
+
+• De nombreux porte-monnaies mobiles basent leur code sur Bitcoin Wallet. Par exemples : blockchain.info et BTCX.
+• Porte-monnaie mobile recommandé par https://bitcoin.org
+• Recommandé par BitPay.
+
+
+<i>Utilisez à vos propres risques !</i>

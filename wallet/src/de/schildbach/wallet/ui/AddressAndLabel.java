@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 the original author or authors.
+ * Copyright 2013-2015 the original author or authors.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,69 +17,77 @@
 
 package de.schildbach.wallet.ui;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import org.bitcoinj.core.Address;
+import org.bitcoinj.core.AddressFormatException;
+import org.bitcoinj.core.NetworkParameters;
+import org.bitcoinj.core.WrongNetworkException;
+
+import com.google.common.base.Objects;
+
+import de.schildbach.wallet.Constants;
 
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import com.google.bitcoin.core.Address;
-import com.google.bitcoin.core.AddressFormatException;
-import com.google.bitcoin.core.NetworkParameters;
-import com.google.bitcoin.core.WrongNetworkException;
-
 /**
  * @author Andreas Schildbach
  */
-public class AddressAndLabel implements Parcelable
-{
-	public final Address address;
-	public final String label;
+public class AddressAndLabel implements Parcelable {
+    public final Address address;
+    public final String label;
 
-	public AddressAndLabel(@Nonnull final NetworkParameters addressParams, @Nonnull final String address, @Nullable final String label)
-			throws WrongNetworkException, AddressFormatException
-	{
-		this.address = new Address(addressParams, address);
-		this.label = label;
-	}
+    public AddressAndLabel(final Address address, @Nullable final String label) {
+        this.address = address;
+        this.label = label;
+    }
 
-	@Override
-	public int describeContents()
-	{
-		return 0;
-	}
+    public AddressAndLabel(final NetworkParameters addressParams, final String address, @Nullable final String label)
+            throws WrongNetworkException, AddressFormatException {
+        this(Address.fromBase58(addressParams, address), label);
+    }
 
-	@Override
-	public void writeToParcel(final Parcel dest, final int flags)
-	{
-		dest.writeSerializable(address.getParameters());
-		dest.writeByteArray(address.getHash160());
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        final AddressAndLabel other = (AddressAndLabel) o;
+        return Objects.equal(this.address, other.address) && Objects.equal(this.label, other.label);
+    }
 
-		dest.writeString(label);
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(address, label);
+    }
 
-	public static final Parcelable.Creator<AddressAndLabel> CREATOR = new Parcelable.Creator<AddressAndLabel>()
-	{
-		@Override
-		public AddressAndLabel createFromParcel(final Parcel in)
-		{
-			return new AddressAndLabel(in);
-		}
+    @Override
+    public int describeContents() {
+        return 0;
+    }
 
-		@Override
-		public AddressAndLabel[] newArray(final int size)
-		{
-			return new AddressAndLabel[size];
-		}
-	};
+    @Override
+    public void writeToParcel(final Parcel dest, final int flags) {
+        dest.writeString(address.toBase58());
+        dest.writeString(label);
+    }
 
-	private AddressAndLabel(final Parcel in)
-	{
-		final NetworkParameters addressParameters = (NetworkParameters) in.readSerializable();
-		final byte[] addressHash = new byte[Address.LENGTH];
-		in.readByteArray(addressHash);
-		address = new Address(addressParameters, addressHash);
+    public static final Parcelable.Creator<AddressAndLabel> CREATOR = new Parcelable.Creator<AddressAndLabel>() {
+        @Override
+        public AddressAndLabel createFromParcel(final Parcel in) {
+            return new AddressAndLabel(in);
+        }
 
-		label = in.readString();
-	}
+        @Override
+        public AddressAndLabel[] newArray(final int size) {
+            return new AddressAndLabel[size];
+        }
+    };
+
+    private AddressAndLabel(final Parcel in) {
+        address = Address.fromBase58(Constants.NETWORK_PARAMETERS, in.readString());
+        label = in.readString();
+    }
 }

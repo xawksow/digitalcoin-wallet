@@ -1,36 +1,27 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <resources>
-
-	<string name="help_wallet">
+  <string name="help_wallet">
 <![CDATA[
 		<p>
-			Den øverste venstre del af skærmen viser din valgte Bitcoin-adresse, som andre har brug for at vide for at sende
-			dig Bitcoins.
-			Berør for at ændre adresse.
+			Den øverste, venstre del af skærmen viser din saldo i Bitcoin og en valgt national valuta.
+			Berør skærmen for at gå til listen over nationale valutaer, og berør en af valutaerne for at vælge den som standard.
 		</p>
 		<p>
 			QR-koden til højre indeholder din bitcoin-adresse og kan scannes af en anden person.
 			Berør QR-koden for at få en større version af den.
 		</p>
 		<p>
-			I midten af skærmen vises din saldo.
-			Din tegnebogs saldo vises også i en valgt lokal valutaenhed.
-			Berør saldoen for at få vist en liste over alle lokale valutaenheder, og berør en af valutaerne for at vælge den
-			som standard.
+			Den nederste del af skærmen viser din transaktionsliste, som er tom tilat begynde med.
+			Afventende transaktioner er grå, inden de er bekræftet.
+			Berør en transaktion i listen for at føje afsenderens eller modtagerens adresse til adressebogen.
 		</p>
 		<p>
-			Bunden af skærmen indeholder din transaktionsliste, som i begyndelsen er tom.
-			Ventende transaktioner er grå, indtil de er bekræftet.
-			Berør en linie for at føje afsenderens eller modtagerens adresse til adressebogen.
-			Swipe venstre eller højre for at anvende filtre på listen.
-		</p>
-		<p>
-			Du kan sende eller forespørge mønter ved at berøre knapperne i action-bjælken.
-			Flere indstillinger kan findes i menuen Opsætning.
+			Du kan sende eller anmode om bitcoin ved at berøre knapperne i handlingsbjælken.
+			Flere muligheder er tilgængelige i opsætningsmenuen.
 		</p>
 	]]>
 	</string>
-	<string name="help_request_coins">
+  <string name="help_request_coins">
 <![CDATA[
 		<p>
 			Ved at bruge denne dialog kan du forespørge mønter fra en anden person (som allerede skal have installeret Bitcoin Wallet).
@@ -49,7 +40,7 @@
 		</p>
 	]]>
 	</string>
-	<string name="help_send_coins">
+  <string name="help_send_coins">
 <![CDATA[
 		<p>
 			Du har startet processen for at sende mønter.
@@ -79,7 +70,7 @@
 		</p>
 	]]>
 	</string>
-	<string name="help_safety">
+  <string name="help_safety">
 <![CDATA[
 		<p>
 			<b>Vigtige bemærkninger om sikkerhed:</b>
@@ -113,5 +104,4 @@
 		</p>
 	]]>
 	</string>
-
 </resources>
